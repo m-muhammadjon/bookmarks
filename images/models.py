@@ -7,13 +7,10 @@ import os
 import uuid
 
 
-class RandomFileName(object):
-    def __init__(self, path):
-        self.path = os.path.join(path, "%s%s")
-
-    def __call__(self, _, filename):
-        extension = os.path.splitext(filename)[1]
-        return self.path % (uuid.uuid4(), extension)
+def get_file_path_post(instance, filename):
+    ext = filename.split('.')[-1]
+    filename = "%s.%s" % (uuid.uuid4(), ext)
+    return os.path.join('images', filename)
 
 
 class Image(models.Model):
@@ -22,12 +19,13 @@ class Image(models.Model):
                              on_delete=models.CASCADE)
     title = models.CharField(max_length=200)
     slug = models.SlugField(max_length=200, blank=True)
-    image = models.ImageField(upload_to=RandomFileName('images'))
+    image = models.ImageField(upload_to=get_file_path_post)
     description = models.TextField(blank=True)
     created = models.DateField(auto_now_add=True, db_index=True)
     users_like = models.ManyToManyField(settings.AUTH_USER_MODEL,
                                         related_name='images_liked',
                                         blank=True)
+    total_likes = models.PositiveIntegerField(db_index=True, default=0)
 
     def save(self, *args, **kwargs):
         if not self.slug:
